@@ -7,6 +7,7 @@
 -- Discord: Connor#2143
 -- Steam: Ghostbroster Connor
 -- Email: ghostbroster@gmail.com
+-- Twitter: @Ghostbroster
 
 local VERSION = 1
 

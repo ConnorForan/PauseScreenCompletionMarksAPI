@@ -12,7 +12,7 @@ Two distinct but related things:
 
 **This API does *NOT* track achievements!** This is for mods already tracking their own achievements to display them on the pause screen while allowing multiple mods to share that space!
 
-If you're just looking for completion mark tracking & display for any modded character not using this API, check out [Completion Marks for ALL Modded Characters](https://steamcommunity.com/sharedfiles/filedetails/?id=2503022727) instead.
+If you're just looking for completion mark tracking & display for any modded character not using this API, check out ["Completion Marks for ALL Modded Characters"](https://steamcommunity.com/sharedfiles/filedetails/?id=2503022727) instead.
 
 If you're a modder trying to figure out how to handle unlocks and save data, you'll have to look elsewhere, sorry. Try taking a look at some popular character mods that feature unlocks.
 
@@ -34,7 +34,9 @@ Just add a line like one of these examples, depending on where you put the lua f
 
 ```lua
 include("pause_screen_completion_marks_api") -- If you put the lua file in your main folder, next to main.lua
-include("myscripts.pause_screen_completion_marks_api") -- If you put it in a subfolder, add it like this. Remember that the path has to be specified from the top-level folder (where main.lua is) even if you're including it from another script in the same folder!
+include("myscripts.pause_screen_completion_marks_api") -- If you put it in a subfolder, add it like this.
+-- Remember that the path has to be specified from the top-level folder (where main.lua is),
+-- even if you're including it from another script in the same folder!
 include("myscripts/pause_screen_completion_marks_api") -- This works too, same as the above.
 ```
 
@@ -46,7 +48,7 @@ Please do NOT use `"require()"` for this API!
 
 A shader is required in order to render over the pause menu.
 
-If you don't have a `"content/shaders.xml"` file already, just drop my `"shaders.xml"` into your content folder, and skip to the next step.
+If you don't have a `"content/shaders.xml"` file already, just drop my `"shaders.xml"` into your content folder, and you're done! You can skip ahead to "How to use".
 
 If your mod already has a shader used for rendering above the hud, you should make this API use that shader, as well, rather than adding another. After `include`'ing the API, call this function:
 
@@ -78,17 +80,26 @@ end)
 
 Basically, you provide a function for the API to call when it wants to get the completion marks for your character. The function you provide must return a table in an appropriate format.
 
-Please note that I'm happy to update the API to be able to recognize the format you're already storing your completion marks in, if that wuld be easier for you than changing your existing format so that its acceptable to this API. Within reason of course, depending on how wacky your format is.
+The API is actually relatively leniant when it comes to input format. Please note that I'm happy to update the API to be able to recognize the format you're already storing your completion marks in, if that wuld be easier for you than changing your existing format so that its acceptable to this API. Within reason of course, depending on how wacky your format is.
 
-However, in general, a format like this is preferred/accepted:
+However, in general, a format roughly like this is preferred/accepted:
 
 ```
 tab[markName] = { Unlock = true, Hard = false }
 tab[markName] = { Unlocked = false, HardMode = false }
+tab[markName] = markFrame
 tab[markLayer] = markFrame
 ```
 
 "markLayer" and "markFrame" refer to the corresponding layer and frame numbers in `"gfx/ui/completion_widget.anm2"`.
+
+The corresponding "markFrame" values are as follows:
+
+```
+0 = Locked
+1 = Unlocked on Normal
+2 = Unlocked on Hard
+```
 
 "markName" is a string representing the name of the completion mark. Here's a simple set of examples:
 
@@ -119,6 +130,8 @@ THE_WITNESS!
 ```
 
 Just let me know if the API doesn't recognize the format of your unlocks, and as long as your format isn't TOO obtuse, I can consider adding support for it.
+
+This probably goes without saying, but be sure to test to make sure all of the marks can get rendered correctly!
 
 ### Custom completion marks
 
@@ -164,6 +177,8 @@ end
 PauseScreenCompletionMarksAPI:AddModMarksCallback("UNIQUE_MOD_NAME", FunctionThatReturnsYourCustomMarks)
 ```
 
+Technically, this method would allow for animated marks... but I will not actively encourage such a thing.
+
 #### *2. One Sprite with specific Animations and/or Frames for each mark*
 
 Alternatively, if you want to be more efficient and use a single sprite/anm2 for all your marks (recommended) you can instead pass a set of tables that specify a specific animation & frame to render from a shared sprite:
@@ -202,3 +217,18 @@ PauseScreenCompletionMarksAPI:AddModMarksCallback("UNIQUE_MOD_NAME", FunctionTha
 If you do it this way, the API will set the sprite to the provided Animation and Frame before rendering it.
 
 An example sprite and anm2 are viewable at "resources\gfx\ui\pause screen completion marks\sample_marks.anm2".
+
+## Known Issues
+
+1. If you open the console while the game is paused, the completion notes from this API will run away. *(This is intentional, as there is no easy way for me to accurately detect when you leave the console.)*
+2. If the game pauses because the game window left focus, the API's completion notes will not appear. *(This is because I rely on detecting when the player manually pauses the game.)*
+
+Both of these issues seem pretty minor to me.
+
+## Credits & Thanks
+
+JSG's ["Completion Marks for ALL Modded Characters"](https://steamcommunity.com/sharedfiles/filedetails/?id=2503022727) served as a reference for rendering the post-it note in general.
+
+Credit to Im_tem for the shader method of actually rendering stuff onto the pause menu.
+
+Thanks to DeadInfinity for allowing me to use the font from [Dead Sea Scrolls](https://github.com/Meowlala/DeadSeaScrollsMenu).
