@@ -37,7 +37,7 @@ PauseScreenCompletionMarksAPI.CHARACTER_CALLBACKS = CACHED_CHARACTER_CALLBACKS o
 PauseScreenCompletionMarksAPI.MOD_MARKS_CALLBACKS = CACHED_MOD_MARK_CALLBACKS or {}
 PauseScreenCompletionMarksAPI.ALT_SHADER = CACHED_ALT_SHADER
 
-local kDefaultShader = "PauseScreenCompletionMarksAPI"
+local kDefaultShader = "PauseScreenCompletionMarks"
 
 local game = Game()
 local kZeroVector = Vector(0,0)
