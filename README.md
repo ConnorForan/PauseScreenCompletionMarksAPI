@@ -1,6 +1,8 @@
 # Pause Screen Completion Marks API
 Code that can be included into Binding of Isaac: Repentance mods to allow them to render completion marks on the pause menu.
 
+**Does not work on Afterbirth+ - The Repentance DLC is required!**
+
 ## What does this API do?
 
 Two distinct but related things:

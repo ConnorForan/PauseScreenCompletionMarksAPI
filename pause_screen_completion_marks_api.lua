@@ -1,9 +1,12 @@
 -- Pause Screen Completion Marks API by Connor, aka Ghostbroster
 -- Credit to JSG and Tem for first rendering completion marks on the pause screen in "Completion Marks for Modded Characters".
+-- Thanks to DeadInfinity for letting me using Dead Sea Scrolls' font for this.
 -- 
--- !! Please see included readme file for a guide and more info !!
+-- GitHub page: https://github.com/ConnorForan/PauseScreenCompletionMarksAPI
 -- 
--- Please do not modify anything below this point! If you want additional features or options, let me know!
+-- !! Please see included readme file for a guide and more info!
+-- 
+-- !! Please do not modify this code! If you want additional features or options, let me know!
 -- Discord: Connor#2143
 -- Steam: Ghostbroster Connor
 -- Email: ghostbroster@gmail.com
