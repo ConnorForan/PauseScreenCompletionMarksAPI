@@ -12,7 +12,7 @@
 -- Email: ghostbroster@gmail.com
 -- Twitter: @Ghostbroster
 
-local VERSION = 1
+local VERSION = 2
 
 local CACHED_CHARACTER_CALLBACKS
 local CACHED_MOD_MARK_CALLBACKS
@@ -72,9 +72,9 @@ end
 --------------------------------------------------
 
 -- Base offset from the center of the screen where the pause screen post-it is.
-local kPostItsRenderOffset = Vector(-72, -84)
+local kDefaultPostItsRenderOffset = Vector(-72, -84)
 -- Offset from the above where the modded completion mark sheet is rendered.
-local kModMarksRenderOffset = Vector(172, -5)
+local kDefaultModMarksRenderOffset = Vector(172, -5)
 
 --------------------------------------------------
 -- Allows using an existing shader
@@ -83,6 +83,36 @@ local kModMarksRenderOffset = Vector(172, -5)
 function PauseScreenCompletionMarksAPI:SetShader(shaderName)
 	if shaderName and not PauseScreenCompletionMarksAPI.ALT_SHADER then
 		PauseScreenCompletionMarksAPI.ALT_SHADER = shaderName
+	end
+end
+
+--------------------------------------------------
+-- Compatability
+--------------------------------------------------
+
+local kUnintrusiveHudPostItOffset = Vector(65, 50)
+local kUnintrusiveHudModMarkOffset = Vector(50, -50)
+
+local kMiniHudPostItOffset = Vector(92, 89)
+local kMiniHudModMarkOffset = Vector(24, -234)
+
+local function GetPostItRenderOffset()
+	if UNINTRUSIVEPAUSEMENU then
+		return kUnintrusiveHudPostItOffset
+	elseif MiniPauseMenu_Mod or MiniPauseMenuPlus_Mod then
+		return kMiniHudPostItOffset
+	else
+		return kDefaultPostItsRenderOffset
+	end
+end
+
+local function GetModMarksRenderOffset()
+	if UNINTRUSIVEPAUSEMENU then
+		return kUnintrusiveHudModMarkOffset
+	elseif MiniPauseMenu_Mod or MiniPauseMenuPlus_Mod then
+		return kMiniHudModMarkOffset
+	else
+		return kDefaultModMarksRenderOffset
 	end
 end
 
@@ -271,7 +301,9 @@ local function PrepareVanillaMarks()
 	if not vanillaMarksSprite then
 		vanillaMarksSprite = Sprite()
 		vanillaMarksSprite:Load("gfx/ui/completion_widget.anm2", false)
-		vanillaMarksSprite:ReplaceSpritesheet(0,"gfx/ui/completion_widget_pause.png")
+		for i=0, 9 do
+			vanillaMarksSprite:ReplaceSpritesheet(i,"gfx/ui/completion_widget_pause.png")
+		end
 		vanillaMarksSprite:LoadGraphics()
 		vanillaMarksSprite:Play("Idle", true)
 		vanillaMarksSprite:Stop()
@@ -288,11 +320,10 @@ end
 -- TEXT RENDERING
 --------------------------------------------------
 
-local font = Sprite()
-font:Load("gfx/ui/pause screen completion marks/menu_font.anm2", true)
-font:Play("12", true)
-font:Stop()
-font.Color = Color(55.0/255, 43.0/255, 45.0/255, 1)
+local kDefaultFontColor = Color(55.0/255, 43.0/255, 45.0/255, 1)
+local kWhiteFontColor = Color(1,1,1,1,0,0,0)
+
+local font
 
 -- Taken directly from DeadSeaScrolls.
 -- First value is the anm2 frame for that character.
@@ -380,6 +411,18 @@ end
 
 -- Renders a string at the given position.
 local function RenderString(str, pos, scale)
+	if not font then
+		font = Sprite()
+		font:Load("gfx/ui/pause screen completion marks/menu_font.anm2", true)
+		font:Play("12", true)
+		font:Stop()
+		if UNINTRUSIVEPAUSEMENU then
+			font.Color = kWhiteFontColor
+		else
+			font.Color = kDefaultFontColor
+		end
+	end
+	
 	if scale then
 		font.Scale = scale
 	else
@@ -437,6 +480,10 @@ local function PrepareModMarks()
 		modPaperSprite = Sprite()
 		modPaperSprite:Load("gfx/ui/pause screen completion marks/custom_marks_sheet.anm2", true)
 		modPaperSprite:Stop()
+		if UNINTRUSIVEPAUSEMENU then
+			modPaperSprite:ReplaceSpritesheet(0, "gfx/ui/pause screen completion marks/custom_marks_sheet_unintrusive.png")
+			modPaperSprite:LoadGraphics()
+		end
 	end
 	
 	local playerType = Isaac.GetPlayer(0):GetPlayerType()
@@ -456,7 +503,7 @@ local function PrepareModMarks()
 		
 		local sprites = func(playerType)
 		
-		if sprites then
+		if sprites and #sprites > 0 then
 			for _, sprite in pairs(sprites) do
 				local spriteData = {}
 				if type(sprite) == "table" then
@@ -483,10 +530,12 @@ local function PrepareModMarks()
 			end
 		end
 		
-		table.insert(modData.MarkGroups, marks)
-		modData.TotalMarks = numMarks
-		table.insert(mods, modData)
-		mostMarks = math.max(mostMarks, numMarks)
+		if numMarks > 0 then
+			table.insert(modData.MarkGroups, marks)
+			modData.TotalMarks = numMarks
+			table.insert(mods, modData)
+			mostMarks = math.max(mostMarks, numMarks)
+		end
 	end
 	
 	table.sort(mods, function(a,b) return a.Name < b.Name end)
@@ -554,7 +603,11 @@ end
 local function RenderModMarks(pos, posOffset, scale)
 	if not modMarkPages or #modMarkPages == 0 then return end
 	
-	pos =  pos + posOffset * scale + kModMarksRenderOffset * scale
+	if MiniPauseMenu_Mod or MiniPauseMenuPlus_Mod then
+		posOffset = posOffset * Vector(1, -1)
+	end
+	
+	pos =  pos + posOffset * scale + GetModMarksRenderOffset() * scale
 	
 	modPaperSprite.Scale = scale
 	
@@ -656,37 +709,41 @@ local function RenderModMarks(pos, posOffset, scale)
 		row = row + 1
 	end
 	
-	-- Pin
-	modPaperSprite:SetFrame("Pin", 0)
-	modPaperSprite.Offset = Vector(18 * (numColumns+2) * scale.X * 0.5 - 9, 0):Rotated(modPaperSprite.Rotation)
-	modPaperSprite:Render(pos, kZeroVector, kZeroVector)
-	
-	-- Left Arrow
-	modPaperSprite:SetFrame("LeftArrow", 0)
-	modPaperSprite.Offset = Vector(18 * (1) * scale.X, 8)
-	if currentModMarkPage == 1 then
-		modPaperSprite.Color = kFadedColor
-		modPaperSprite:Render(pos, kZeroVector, kZeroVector)
-		modPaperSprite.Color = Color.Default
-	else
+	if not (UNINTRUSIVEPAUSEMENU or MiniPauseMenu_Mod or MiniPauseMenuPlus_Mod) then
+		-- Pin
+		modPaperSprite:SetFrame("Pin", 0)
+		modPaperSprite.Offset = Vector(18 * (numColumns+2) * scale.X * 0.5 - 9, 0):Rotated(modPaperSprite.Rotation)
 		modPaperSprite:Render(pos, kZeroVector, kZeroVector)
 	end
 	
-	-- Right Arrow
-	modPaperSprite:SetFrame("RightArrow", 0)
-	modPaperSprite.Offset = Vector(18 * (numColumns) * scale.X, 8)
-	if currentModMarkPage == #modMarkPages then
-		modPaperSprite.Color = kFadedColor
-		modPaperSprite:Render(pos, kZeroVector, kZeroVector)
-		modPaperSprite.Color = Color.Default
-	else
-		modPaperSprite:Render(pos, kZeroVector, kZeroVector)
+	if #modMarkPages > 1 then
+		-- Left Arrow
+		modPaperSprite:SetFrame("LeftArrow", 0)
+		modPaperSprite.Offset = Vector(18 * (1) * scale.X, 8)
+		if currentModMarkPage == 1 then
+			modPaperSprite.Color = kFadedColor
+			modPaperSprite:Render(pos, kZeroVector, kZeroVector)
+			modPaperSprite.Color = Color.Default
+		else
+			modPaperSprite:Render(pos, kZeroVector, kZeroVector)
+		end
+		
+		-- Right Arrow
+		modPaperSprite:SetFrame("RightArrow", 0)
+		modPaperSprite.Offset = Vector(18 * (numColumns) * scale.X, 8)
+		if currentModMarkPage == #modMarkPages then
+			modPaperSprite.Color = kFadedColor
+			modPaperSprite:Render(pos, kZeroVector, kZeroVector)
+			modPaperSprite.Color = Color.Default
+		else
+			modPaperSprite:Render(pos, kZeroVector, kZeroVector)
+		end
+		
+		-- Page Number
+		local pageNumStr = "" .. currentModMarkPage .. " / " .. #modMarkPages
+		local pageNumOffset = Vector(18 * (numColumns+2) * scale.X * 0.5 - GetStringWidth(pageNumStr) * 0.5 - 1, 18)
+		RenderString(pageNumStr, pos + pageNumOffset, scale)
 	end
-	
-	-- Page Number
-	local pageNumStr = "" .. currentModMarkPage .. " / " .. #modMarkPages
-	local pageNumOffset = Vector(18 * (numColumns+2) * scale.X * 0.5 - GetStringWidth(pageNumStr) * 0.5 - 1, 18)
-	RenderString(pageNumStr, pos + pageNumOffset, scale)
 end
 
 --------------------------------------------------
@@ -696,6 +753,7 @@ end
 local currentAnim = nil
 local keyframeIndex = nil
 local keyframeCounter = 0
+local animFinished = 0
 
 -- Appear/Disappear animations taken from the "CompletionWidget" layer of "pausescreen.anm2".
 local Animations = {
@@ -762,6 +820,52 @@ local Animations = {
 			Duration = 1
 		},
 	},
+	MiniAppear = {
+		{
+			PosOffsetX = 0,
+			PosOffsetY = 63,
+			ScaleX = 0.5,
+			ScaleY = 1.5,
+			Duration = 1
+		},
+		{
+			PosOffsetX = 0,
+			PosOffsetY = 0,
+			ScaleX = 1.1,
+			ScaleY = 0.9,
+			Duration = 2
+		},
+		{
+			PosOffsetX = 0,
+			PosOffsetY = 0,
+			ScaleX = 1.0,
+			ScaleY = 1.0,
+			Duration = 1
+		},
+	},
+	MiniDisappear = {
+		{
+			PosOffsetX = 0,
+			PosOffsetY = 0,
+			ScaleX = 1.0,
+			ScaleY = 1.0,
+			Duration = 2
+		},
+		{
+			PosOffsetX = 0,
+			PosOffsetY = 0,
+			ScaleX = 1.1,
+			ScaleY = 0.9,
+			Duration = 2
+		},
+		{
+			PosOffsetX = 0,
+			PosOffsetY = 63,
+			ScaleX = 0.5,
+			ScaleY = 1.5,
+			Duration = 1
+		},
+	},
 }
 
 -- Advances the slide in/out animation by 1 frame.
@@ -772,6 +876,7 @@ local function AnimatePauseScreenPostIts(anim)
 		if Isaac.GetFrameCount() % 2 == 0 then
 			keyframeCounter = -0.5
 		end
+		animFinished = 0
 	end
 	local currentKeyframe = Animations[anim][keyframeIndex]
 	local nextKeyframe = Animations[anim][keyframeIndex+1]
@@ -787,6 +892,8 @@ local function AnimatePauseScreenPostIts(anim)
 			keyframeIndex = keyframeIndex + 1
 			keyframeCounter = 0
 		end
+	else
+		animFinished = (animFinished or 0) + 1
 	end
 	
 	return posOffset, scale
@@ -805,6 +912,7 @@ local function RenderPostIt(anim, instant)
 			keyframeIndex = nil
 		end
 		keyframeCounter = 0
+		animFinished = 0
 		if anim == "Appear" then
 			PrepareVanillaMarks()
 			PrepareModMarks()
@@ -823,16 +931,24 @@ local function RenderPostIt(anim, instant)
 		currentModMarkPage = currentModMarkPage - 1
 	end
 	
-	local posOffset, scale = AnimatePauseScreenPostIts(anim)
+	local trueAnim = anim
+	
+	if UNINTRUSIVEPAUSEMENU or MiniPauseMenu_Mod or MiniPauseMenuPlus_Mod then
+		trueAnim = "Mini" .. anim
+	end
+	
+	local posOffset, scale = AnimatePauseScreenPostIts(trueAnim)
 	local extraOffset = Vector(math.floor((Isaac.GetScreenWidth()/10) - 48), 0)
 	local screenCenterPos = Vector(math.floor(Isaac.GetScreenWidth()*0.5), math.floor(Isaac.GetScreenHeight()*0.5))
-	local pos = screenCenterPos + kPostItsRenderOffset + extraOffset
+	local pos = screenCenterPos + GetPostItRenderOffset() + extraOffset
 	
-	if completionMarks and vanillaMarksSprite then
-		vanillaMarksSprite.Scale = scale
-		vanillaMarksSprite:Render(pos + posOffset, kZeroVector, kZeroVector)
+	if not (anim == "Disappear" and animFinished > 1) then
+		if completionMarks and vanillaMarksSprite then
+			vanillaMarksSprite.Scale = scale
+			vanillaMarksSprite:Render(pos + posOffset, kZeroVector, kZeroVector)
+		end
+		RenderModMarks(pos, posOffset, scale)
 	end
-	RenderModMarks(pos, posOffset, scale)
 end
 
 --------------------------------------------------
