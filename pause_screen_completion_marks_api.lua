@@ -209,6 +209,8 @@ local function IsTaintedChar(player)
 	return player:GetPlayerType() == Isaac.GetPlayerTypeByName(player:GetName(), true)
 end
 
+local completionMarks
+
 -- Collect the completion marks to render for player 1.
 local function GetCompletionMarks()
 	completionMarks = nil
