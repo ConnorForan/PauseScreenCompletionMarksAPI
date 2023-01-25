@@ -12,7 +12,7 @@
 -- Email: ghostbroster@gmail.com
 -- Twitter: @Ghostbroster
 
-local VERSION = 2
+local VERSION = 3
 
 local CACHED_CHARACTER_CALLBACKS
 local CACHED_MOD_MARK_CALLBACKS
@@ -45,6 +45,7 @@ local kDefaultShader = "PauseScreenCompletionMarks"
 local game = Game()
 local kZeroVector = Vector(0,0)
 local kNormalVector = Vector(1,1)
+local kDefaultColor = Color(1,1,1,1)
 
 --Stolen from PROAPI
 local function Lerp(first,second,percent)
@@ -448,7 +449,7 @@ end
 -- MODDED COMPLETION MARKS HANDLING
 --------------------------------------------------
 
-local kMinPageWidth = 3
+local kMinPageWidth = 2
 local kMaxPageWidth = 4
 local kMaxPageHeight = 6
 
@@ -580,7 +581,7 @@ local function PrepareModMarks()
 	LOG("...Done.")
 end
 
-local function RenderModPostItPiece(pos, anim, frame, row, col, mark)
+local function RenderModPostItPiece(pos, anim, frame, row, col, mark, centerMark)
 	modPaperSprite:SetFrame(anim, frame)
 	local rot = modPaperSprite.Rotation
 	local scale = modPaperSprite.Scale
@@ -598,6 +599,9 @@ local function RenderModPostItPiece(pos, anim, frame, row, col, mark)
 		sprite.Rotation = rot
 		sprite.Scale = scale
 		sprite.Offset = offset + kNormalVector
+		if centerMark then
+			sprite.Offset = sprite.Offset - Vector(9, 0)
+		end
 		sprite:Render(pos, kZeroVector, kZeroVector)
 	end
 end
@@ -645,6 +649,8 @@ local function RenderModMarks(pos, posOffset, scale)
 			local anim
 			local frame = 0
 			local mark
+			local singleMark = false
+			
 			if row == 0 then
 				if col == 0 then
 					anim = "TopLeft"
@@ -672,11 +678,16 @@ local function RenderModMarks(pos, posOffset, scale)
 			else
 				anim = "Middle"
 				if not needToWriteModName and markIterator and row > 0 then
-					mark = mods[currentMod].Marks[markIterator]
-					markIterator = next(mods[currentMod].Marks, markIterator)
+					if #mods[currentMod].Marks == 1 and (numColumns == 2 or numColumns == 3) then
+						singleMark = true
+					end
+					if not (singleMark and col == 1) then 
+						mark = mods[currentMod].Marks[markIterator]
+						markIterator = next(mods[currentMod].Marks, markIterator)
+					end
 				end
 			end
-			RenderModPostItPiece(pos, anim, frame, row, col, mark)
+			RenderModPostItPiece(pos, anim, frame, row, col, mark, singleMark and numColumns == 2)
 		end
 		
 		if currentMod and row > 0 and needToWriteModName then
@@ -725,7 +736,7 @@ local function RenderModMarks(pos, posOffset, scale)
 		if currentModMarkPage == 1 then
 			modPaperSprite.Color = kFadedColor
 			modPaperSprite:Render(pos, kZeroVector, kZeroVector)
-			modPaperSprite.Color = Color.Default
+			modPaperSprite.Color = kDefaultColor
 		else
 			modPaperSprite:Render(pos, kZeroVector, kZeroVector)
 		end
@@ -736,7 +747,7 @@ local function RenderModMarks(pos, posOffset, scale)
 		if currentModMarkPage == #modMarkPages then
 			modPaperSprite.Color = kFadedColor
 			modPaperSprite:Render(pos, kZeroVector, kZeroVector)
-			modPaperSprite.Color = Color.Default
+			modPaperSprite.Color = kDefaultColor
 		else
 			modPaperSprite:Render(pos, kZeroVector, kZeroVector)
 		end
