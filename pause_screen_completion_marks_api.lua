@@ -12,7 +12,7 @@
 -- Email: ghostbroster@gmail.com
 -- Twitter: @Ghostbroster
 
-local VERSION = 3
+local VERSION = 4
 
 local CACHED_CHARACTER_CALLBACKS
 local CACHED_MOD_MARK_CALLBACKS
@@ -304,7 +304,7 @@ local function PrepareVanillaMarks()
 	if not vanillaMarksSprite then
 		vanillaMarksSprite = Sprite()
 		vanillaMarksSprite:Load("gfx/ui/completion_widget.anm2", false)
-		for i=0, 9 do
+		for i=0, 11 do
 			vanillaMarksSprite:ReplaceSpritesheet(i,"gfx/ui/completion_widget_pause.png")
 		end
 		vanillaMarksSprite:LoadGraphics()
@@ -610,7 +610,7 @@ local function RenderModMarks(pos, posOffset, scale)
 	if not modMarkPages or #modMarkPages == 0 then return end
 	
 	if MiniPauseMenu_Mod or MiniPauseMenuPlus_Mod then
-		posOffset = posOffset * Vector(1, -1)
+		posOffset = posOffset * Vector(1, -0.2)
 	end
 	
 	pos =  pos + posOffset * scale + GetModMarksRenderOffset() * scale
