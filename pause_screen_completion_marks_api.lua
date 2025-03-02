@@ -10,9 +10,8 @@
 -- Discord: Connor#2143
 -- Steam: Ghostbroster Connor
 -- Email: ghostbroster@gmail.com
--- Twitter: @Ghostbroster
 
-local VERSION = 4
+local VERSION = 5
 
 local CACHED_CHARACTER_CALLBACKS
 local CACHED_MOD_MARK_CALLBACKS
@@ -274,6 +273,9 @@ local function GetCompletionMarks()
 				return
 			elseif layer == 0 and IsTaintedChar(player) and frame < 3 then
 				frame = frame + 3
+				if REPENTANCE_PLUS then
+					frame = frame + 2
+				end
 			end
 			
 			completionMarks[layer] = frame
